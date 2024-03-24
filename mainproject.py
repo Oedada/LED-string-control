@@ -11,6 +11,7 @@ from kivy.uix.slider import Slider
 from kivy.uix.image import Image 
 import socket
 import time
+flagDYN = 0
 sumRGB = 0
 serverMACAddress = '00:22:06:01:59:AB'  # Put your HC-05 address here
 port = 1  # Match the setting on the HC-05 module
@@ -27,6 +28,14 @@ class Light(App):
         pos_hint={'x': .7, 'y':.2},
         multiline=False,
         text = ('000')
+        )
+        self.OFF = Button(
+        text = "Выключить ленту",
+        size_hint = (.2,.08),
+        pos_hint={'x': .01, 'y':.9},
+        background_color = [0,.47,.100,1],
+        background_normal = '',
+        on_press = self.OFFfun   
         )
         self.red = TextInput(
         size_hint = (.1,.08),
@@ -111,16 +120,17 @@ class Light(App):
         self.HUElb = Image(source='HUElb.png',size_hint = (.2,.04),pos_hint = {'center_x':0.5,'center_y':0.5},fit_mode = ("contain"))
         self.HUE = Image(source='HUE.png',size_hint = (.4,.08),pos_hint = {'center_x':0.5,'center_y':0.4},fit_mode = ("contain"))
         self.slideHUE = Slider(min=0, max=255, value=0,value_track_color=[1, 0, 0, 1], size_hint = (.4,.08),pos_hint={'center_x':0.5,'center_y':0.4},border_horizontal = (0,1,0,1))
-        self.Off = Button(
-        text = 'Выключить ленту',
+        self.Brightness = Button(
+        text = 'Отправить яркость',
         size_hint = (.2,.08),
         pos_hint={'x': .01, 'y':.7},
         background_color = [.19,.55,.91,1],
         background_normal = '',
         on_press = self.Brightfun
         )
+        layout.add_widget(self.OFF)
         layout.add_widget(self.HUEbt)
-        layout.add_widget(self.Off)
+        layout.add_widget(self.Brightness)
         layout.add_widget(self.Brightlb)
         layout.add_widget(self.Bright)  
         layout.add_widget(self.RainbowDynamic)
@@ -141,13 +151,32 @@ class Light(App):
     def __init__(self):
         super().__init__()
         self.label = Label(text='',size_hint = (.5,1),pos_hint={'x': .5, 'y':.8})
-    def color(self, *args):
-        self.label.text = (str(self.blue.text))
+
+
+
     def RainbowStaticFun(self,*args):
-        s.send(bytes("Rainbowstatic", 'UTF-8'))   
+        global flagDYN
+        if flagDYN ==1:
+            s.send(bytes("Remove", 'UTF-8'))
+            time.sleep(2) 
+            flagDYN = 0
+        s.send(bytes("Rainbowstatic", 'UTF-8'))
+
+
+
     def RainbowDynamicFun(self,*args):
         s.send(bytes("Rainbowdynamic", 'UTF-8'))  
-    def SubmitRGB(self,obj):  
+        flagDYN = 1
+        print(flagDYN)
+
+
+
+    def SubmitRGB(self,obj):
+        global flagDYN
+        if flagDYN == 1:
+            s.send(bytes("Remove", 'UTF-8'))
+            time.sleep(2)
+            flagDYN = 0  
         s.send(bytes("RGB", 'UTF-8')) 
         sumRGB = str(str(self.red.text)+str(self.green.text)+str(self.blue.text))
         time.sleep(2) 
@@ -156,16 +185,44 @@ class Light(App):
         self.red.text = "000"
         self.green.text = "000"
         self.blue.text = "000"
+
+
+
     def Brightfun(self,*args):
+        global flagDYN
+        if flagDYN ==1:
+            s.send(bytes("Remove", 'UTF-8'))
+            time.sleep(2)
+            print("HUEok")
+            flagDYN = 0
         s.send(bytes("Brightness", 'UTF-8')) 
-        time.sleep(1.2)
+        time.sleep(2)
         s.send(bytes(self.Bright.text, 'UTF-8'))
         self.Bright.text = "0"
+
+
+
     def HUEfun(self,*args):
+        global flagDYN
+        if flagDYN == 1:
+            s.send(bytes("Remove", 'UTF-8')) 
+            time.sleep(1.5)
+            flagDYN = 0
         s.send(bytes("HUE", 'UTF-8'))  
         time.sleep(2)
         print(self.slideHUE.value)
-        s.send(bytes(str(self.slideHUE.value//1), 'UTF-8')) 
+        HUEvalue = (self.slideHUE.value)//1
+        s.send(bytes(str(HUEvalue), 'UTF-8'))
+        
+
+
+    def OFFfun(self,*args):
+        global flagDYN
+        if flagDYN == 1:
+            s.send(bytes("Remove", 'UTF-8'))
+            time.sleep(2)
+            flagDYN = 0
+        s.send(bytes("Off", 'UTF-8'))       
         
          
       
