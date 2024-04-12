@@ -165,6 +165,7 @@ class Light(App):
 
 
     def RainbowDynamicFun(self,*args):
+        global flagDYN
         s.send(bytes("Rainbowdynamic", 'UTF-8'))  
         flagDYN = 1
         print(flagDYN)
@@ -195,10 +196,11 @@ class Light(App):
             time.sleep(2)
             print("HUEok")
             flagDYN = 0
-        s.send(bytes("Brightness", 'UTF-8')) 
-        time.sleep(2)
-        s.send(bytes(self.Bright.text, 'UTF-8'))
-        self.Bright.text = "0"
+        if int(self.Bright.text)!=0:
+            s.send(bytes("Brightness", 'UTF-8')) 
+            time.sleep(2)
+            s.send(bytes(self.Bright.text, 'UTF-8'))
+            self.Bright.text = "0"
 
 
 
