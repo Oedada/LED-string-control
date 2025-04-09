@@ -15,46 +15,59 @@ void setup() {
   FastLED.show();
 }
 
-void breath(float t, int r, int g, int b,int repeat){
-  uint32_t startt = millis();
-  int y = 255;
-  long dl = t/(y*2);
-  for(int j = 0; j < repeat; j++){
-    for(int i = 0; i < y; i += 5){
-      FastLED.delay(dl);
+void breath(float t, int r, int g, int b, int repeat) {
+  int y = 100;
+  long dl = (t * 2800) / y;
+  uint32_t start = millis();
+  for (int j = 0; j < repeat; j++) {
+    for (int i = 0; i < y; i += 7) {
       FastLED.showColor(CRGB(r, g, b), i);
       FastLED.show();
+      delay(dl);
     }
-    for(int i = y; i > 0; i -= 5){
-      FastLED.delay(dl);
+    for (int i = y; i > 0; i -= 7) {
       FastLED.showColor(CRGB(r, g, b), i);
       FastLED.show();
+      delay(dl);
     }
   }
-  Serial.println(millis() - startt);
+  Serial.println(millis() - start);
 }
 
-void staticRainbow(bool dir){
-    if(dir){
-      for(byte i = 0; i < NUM_LEDS; i++){
-        byte hue = float(i)/NUM_LEDS*191;
-        leds[i] = CHSV(hue, 255, BRIGHTNESS);
+class Rainbow {
+  public:
+    void gradient(bool dir) {
+      if (dir) {
+        for (byte i = 0; i < NUM_LEDS; i++) {
+          byte hue = float(i) / NUM_LEDS * 255;
+          leds[i] = CHSV(hue, 255, BRIGHTNESS);
+        }
+      }
+      else {
+        for (byte i = 0; i < NUM_LEDS; i++) {
+          byte hue = float(NUM_LEDS - i) / NUM_LEDS * 255;
+          leds[i] = CHSV(hue, 255, BRIGHTNESS);
+        }
+      }
+      FastLED.show();
+    }
+    void fill(int t) {
+      long dl = float(t) * 1000 / 255;
+      uint32_t startt = millis();
+      for (byte i = 0; i < 255; i++) {
+        FastLED.showColor(CHSV(i, 255, BRIGHTNESS));
+        delay(dl);
       }
     }
-    else{
-      for(byte i = 0; i < NUM_LEDS; i++){
-        byte hue = float(NUM_LEDS-i)/NUM_LEDS*191;
-        leds[i] = CHSV(hue, 255, BRIGHTNESS);
-      }
-    }
-    FastLED.show();
-}
+};
 
-//void showAll(){
-//  breath(1, 50, 130, 10, 5);
-//  staticRainbow(true);
-//}
+void showAll() {
+  Rainbow allRainbow;
+  breath(1, 50, 130, 10, 5);
+  //  allRainbow.staticRainbow(true);
+  //  allRainbow.fill(1);
+}
 
 void loop() {
-  staticRainbow(0);
+  showAll();
 }
