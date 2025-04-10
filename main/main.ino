@@ -1,24 +1,17 @@
 #include <FastLED.h>
 
 #define LED_PIN  2
-#define NUM_LEDS 30
+#define NUM_LEDS 96
 #define COLOR_ORDER GRB
 #define CHIPSET     WS2811
 
-#define BRIGHTNESS 120
+#define BRIGHTNESS 100
 CRGB leds[NUM_LEDS];
-
-void setup() {
-  FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, NUM_LEDS);  // GRB ordering is assumed
-  Serial.begin(115200);
-  Serial.println("--------------New output--------------");
-  FastLED.show();
-}
+byte bleds[NUM_LEDS];
 
 void breath(float t, int r, int g, int b, int repeat) {
   int y = 100;
   long dl = (t * 2800) / y;
-  uint32_t start = millis();
   for (int j = 0; j < repeat; j++) {
     for (int i = 0; i < y; i += 7) {
       FastLED.showColor(CRGB(r, g, b), i);
@@ -31,7 +24,30 @@ void breath(float t, int r, int g, int b, int repeat) {
       delay(dl);
     }
   }
-  Serial.println(millis() - start);
+}
+
+
+void fill(byte r, byte g, byte b){
+  FastLED.showColor((r, b, b), BRIGHTNESS);
+}
+
+
+void blinding_lights(){
+  for(byte i = 0; i < NUM_LEDS; i++){
+    bleds[i] = random(0, 2);
+    Serial.println(bleds[i]);
+  }
+  Serial.println("---ooo---");
+  for(byte i = 0; i < NUM_LEDS; i++){
+    Serial.println(bleds[i]);
+    if(bleds[i] == 1){
+      leds[i] = CRGB(0, 255, 0);
+    }
+    else{
+      leds[i] = 0;
+    }
+  }
+ FastLED.show();
 }
 
 class Rainbow {
@@ -59,13 +75,35 @@ class Rainbow {
         delay(dl);
       }
     }
+    void dynamic_gradient(){
+      for(byte j = 0; j < 255; j++){
+        for(byte i = 0; i < NUM_LEDS; i++){
+          leds[i] = CHSV(j + i, 255, BRIGHTNESS);
+        }
+        FastLED.show();
+        delay(10);
+      }
+    }
 };
 
+
 void showAll() {
-  Rainbow allRainbow;
+    Rainbow allRainbow;
+//  fill(0, 255, 155);
 //  breath(1, 50, 130, 10, 5);
-  //  allRainbow.staticRainbow(true);
-    allRainbow.fill(1);
+//  blinding_lights();
+//  allRainbow.gradient(true);
+//  allRainbow.fill(1);
+  allRainbow.dynamic_gradient();
+}
+
+
+void setup() {
+  FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, NUM_LEDS);  // GRB ordering is assumed
+  Serial.begin(115200);
+  Serial.println("--------------New output--------------");
+  FastLED.show();
+//  fill(255, 255, 255);
 }
 
 void loop() {
