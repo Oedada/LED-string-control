@@ -63,9 +63,9 @@ class Rainbow {
 
 void showAll() {
   Rainbow allRainbow;
-  breath(1, 50, 130, 10, 5);
+//  breath(1, 50, 130, 10, 5);
   //  allRainbow.staticRainbow(true);
-  //  allRainbow.fill(1);
+    allRainbow.fill(1);
 }
 
 void loop() {
