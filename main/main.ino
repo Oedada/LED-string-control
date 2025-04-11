@@ -2,12 +2,12 @@
 #include <TimerOne.h>
 
 #define LED_PIN  2
-#define NUM_LEDS 6
+#define NUM_LEDS 96
 #define COLOR_ORDER GRB
 #define CHIPSET     WS2811
 
-#define BRIGHTNESS 100
-#define MAX_BRIGHTNESS 100
+byte brightness = 100;
+byte max_brightness = 100;
 CRGB leds[NUM_LEDS];
 byte bleds[NUM_LEDS];
 char digits[16] = "0123456789ABCDEF";
@@ -43,7 +43,7 @@ class Cmd{
     }
     
     char* read(){
-      if(Serial.available()== 8){
+      if(Serial.available()> 7){
         c1 = ascii();
         c2 = ascii();
         a1 = ascii();
@@ -73,24 +73,20 @@ Cmd cmd;
 
 
 void breath() {
-  if(counter < 255 && !flag){
+  if(counter < max_brightness && !flag){
     FastLED.showColor(CRGB(cmd.r, cmd.g, cmd.b), counter);
-    FastLED.show();
     counter++;
   }
   else if(counter > 0 && flag){
     FastLED.showColor(CRGB(cmd.r, cmd.g, cmd.b), counter);
-    FastLED.show();
     counter--;
   }
-  else if(counter == 255 && !flag){
+  else if(counter == max_brightness && !flag){
     FastLED.showColor(CRGB(cmd.r, cmd.g, cmd.b), counter);
-    FastLED.show();
     flag = 1;
   }
   else if(counter == 0 && flag){
     FastLED.showColor(CRGB(cmd.r, cmd.g, cmd.b), counter);
-    FastLED.show();
     flag = 0;
   }
 }
@@ -122,13 +118,13 @@ class Rainbow {
       if (dir) {
         for (byte i = 0; i < NUM_LEDS; i++) {
           byte hue = float(i) / NUM_LEDS * 255;
-          leds[i] = CHSV(hue, 255, BRIGHTNESS);
+          leds[i] = CHSV(hue, 255, brightness);
         }
       }
       else {
         for (byte i = 0; i < NUM_LEDS; i++) {
           byte hue = float(NUM_LEDS - i) / NUM_LEDS * 255;
-          leds[i] = CHSV(hue, 255, BRIGHTNESS);
+          leds[i] = CHSV(hue, 255, brightness);
         }
       }
       FastLED.show();
@@ -137,65 +133,81 @@ class Rainbow {
       long dl = float(t) * 1000 / 255;
       uint32_t startt = millis();
       for (byte i = 0; i < 255; i++) {
-        FastLED.showColor(CHSV(i, 255, BRIGHTNESS));
+        FastLED.showColor(CHSV(i, 255, brightness));
         delay(dl);
       }
     }
-    void dynamic_gradient(bool dir){
-      for(byte j = 0; j < 255; j++){
+    static void dynamic_gradient(){
         for(byte i = 0; i < NUM_LEDS; i++){
-          if(dir){
-            leds[i] = CHSV(j + i, 255, BRIGHTNESS);
+          if(cmd.a1 > 0){
+            leds[i] = CHSV(counter + i, 255, brightness);
           }
           else{
-            leds[i] = CHSV(255-(j + i), 255, BRIGHTNESS);
+            leds[i] = CHSV(255-(counter + i), 255, brightness);
           }
         }
         FastLED.show();
-        delay(10);
       }
-    }
 };
-Rainbow allRainbow;
-
-
-void showAll() {
-//  fill(0, 255, 0);
-//  breath(1, 50, 130, 10, 5);
-//  blinding_lights();
-//  allRainbow.gradient(true);
-//  allRainbow.fill(5);
-  allRainbow.dynamic_gradient(0);
-}
+Rainbow rainbow;
 
 
 void setup() {
   FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, NUM_LEDS);  // GRB ordering is assumed
-  Serial.begin(115200);
+  Serial.begin(4800);
   Serial.println("--------------New output--------------");
   FastLED.show();
   Timer1.initialize();
 }
-
+// 99 - установить период в микросекундах тумноженных на десять(i now it's crazy)
+// 98 - установить яркость
+// 97 - установить максимальную яркость
 void loop() {
   cmd.read();
   if(cmd.c1 == 9 && cmd.c2 == 9){
-    timing = (cmd.a1*(16**5)+cmd.a2*(16**4)+cmd.a3*(16**3)+cmd.a4*(16**2)+cmd.a5*16+cmd.a6)*10;
+    Serial.print(cmd.c1); Serial.println(cmd.c2);
+    timing = (cmd.a1*pow(16, 5)+cmd.a2*pow(16, 4)+cmd.a3*pow(16, 3)+cmd.a4*pow(16, 2)+cmd.a5*16+cmd.a6)*10;
+  }
+  else if(cmd.c1 == 9 && cmd.c2 == 8){
+    Serial.print(cmd.c1); Serial.println(cmd.c2);
+    FastLED.setBrightness(cmd.a1*16+cmd.a2);
+    FastLED.show();
+  }
+  else if(cmd.c1 == 9 && cmd.c2 == 7){
+    if(cmd.cp1 != cmd.c1 || cmd.cp2 != cmd.c2){
+      Timer1.detachInterrupt();
+      cmd.cp1 = cmd.c1;
+      cmd.cp2 = cmd.c2; 
+    }
+    max_brightness = cmd.a1*16+cmd.a2;
   }
   else if(cmd.c1 == 0 && cmd.c2 == 1){
+    Serial.print(cmd.c1); Serial.println(cmd.c2);
+    if(cmd.cp1 != cmd.c1 || cmd.cp2 != cmd.c2){
+      Timer1.detachInterrupt();
+      cmd.cp1 = cmd.c1;
+      cmd.cp2 = cmd.c2; 
+    }
     cmd.hexToRgb();
-    FastLED.showColor(CRGB(cmd.r, cmd.g, cmd.b), BRIGHTNESS);
+    FastLED.showColor(CRGB(cmd.r, cmd.g, cmd.b), brightness);
   }
   else if(cmd.c1 == 0 && cmd.c2 == 2){
+    Serial.print(cmd.c1); Serial.println(cmd.c2);
     cmd.hexToRgb();
-    Timer1.detachInterrupt()
-    Timer1.attachInterrupt(breath, timing/(MAX_BRIGHTNESS*2));
+    if(cmd.cp1 != cmd.c1 || cmd.cp2 != cmd.c2){
+      Timer1.detachInterrupt();
+      cmd.cp1 = cmd.c1;
+      cmd.cp2 = cmd.c2; 
+    }
+    Timer1.attachInterrupt(breath, timing/(max_brightness*2));
   }
-  else if(cmd.c1 == 0 && cmd.c2 == 6 && cmd.a1 == 0){
-    allRainbow.dynamic_gradient(0);
+  else if(cmd.c1 == 0 && cmd.c2 == 6){
+    Serial.print(cmd.c1); Serial.println(cmd.c2);
+    if(cmd.cp1 != cmd.c1 || cmd.cp2 != cmd.c2){
+      Timer1.detachInterrupt();
+      cmd.cp1 = cmd.c1;
+      cmd.cp2 = cmd.c2; 
+    }
+    Timer1.attachInterrupt(rainbow.dynamic_gradient, timing/255);
   }
-  else if(cmd.c1 == 0 && cmd.c2 == 6 && cmd.a1 == 1){
-    allRainbow.dynamic_gradient(1);
-  }
-
 }
