@@ -165,7 +165,7 @@ Rainbow rainbow;
 
 void setup() {
   FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, NUM_LEDS);
-  Serial.begin(115200);
+  Serial.begin(9600);
   Serial.println("--------------New output--------------");
   FastLED.show();
   Timer1.initialize();
@@ -242,7 +242,7 @@ void loop() {
       cmd.cp1 = cmd.c1;
       cmd.cp2 = cmd.c2;
       cmd.counter = 0;
-      Timer1.attachInterrupt(Rainbow.dynamic_gradient, 10000);
+      Timer1.attachInterrupt(Rainbow::dynamic_gradient, 10000);
       Timer1.start();
     }
   }
